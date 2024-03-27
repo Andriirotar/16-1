@@ -1,18 +1,24 @@
 #include <iostream>
-int main() {
-    char ch;
-    int пробіли = 0, табуляції = 0, нові_рядки = 0;
-    while (std::cin.get(ch)) {
-        if (ch == ' ') {
-            пробіли++;
-        } else if (ch == '\t') {
-            табуляції++;
-        } else if (ch == '\n') {
-            нові_рядки++;
-        }
+// Функція для обчислення факторіалу
+int factorial(int n) {
+    if (n < 0) {
+        throw std::invalid_argument("Неможливо обчислити факторіал від'ємного числа");
     }
-    std::cout << "Пробіли: " << пробіли << std::endl;
-    std::cout << "Табуляції: " << табуляції << std::endl;
-    std::cout << "Нові рядки: " << нові_рядки << std::endl;
+    int result = 1;
+    for (int i = 2; i <= n; ++i) {
+        result *= i;
+    }
+    return result;
+}
+int main() {
+    try {
+        int n;
+        std::cout << "Введіть число: ";
+        std::cin >> n;
+        int result = factorial(n);
+        std::cout << "Факторіал " << n << " = " << result << std::endl;
+    } catch (std::invalid_argument& e) {
+        std::cerr << "Помилка: " << e.what() << std::endl;
+    }
     return 0;
 }
