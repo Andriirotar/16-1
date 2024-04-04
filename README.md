@@ -1,60 +1,91 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <cmath>
 #include <stdexcept>
-// Функція для обчислення T(x) з таблиці
-double computeT(double x) {
-    // Читаємо дані з файлу dat_X_1_1.dat, dat_X1_00.dat або dat_X00_1.dat
-    std::ifstream file;
-    if (x >= 1)
-        file.open("dat_X_1_1.dat");
-    else if (x <= -1)
-        file.open("dat_X00_1.dat");
-    else
-        file.open("dat_X1_00.dat");
-    double inputX, t, u;
-    while (file >> inputX >> t >> u) {
-        if (inputX == x)
-            return t;
+#include <sstream>
+// Функція для зчитування даних з файлу та побудови таблиці
+std::vector<std::vector<double>> readTableFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Помилка відкриття файлу " + filename);
     }
-    throw std::runtime_error("Не вдалося знайти значення T(x) у файлі.");
+    std::vector<std::vector<double>> table;
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::vector<double> row;
+        double value;
+        while (iss >> value) {
+            row.push_back(value);
+        }
+        table.push_back(row);
+    }
+    return table;
+}
+// Функція для обчислення T(x) з таблиці
+double computeT(const std::vector<std::vector<double>>& table, double x) {
+    for (const auto& row : table) {
+        if (row[0] == x) {
+            return row[1];
+        }
+    }
+    throw std::runtime_error("Немає значення T для введеного x");
 }
 // Функція для обчислення U(x) з таблиці
-double computeU(double x) {
-    // Читаємо дані з файлу dat_X_1_1.dat, dat_X1_00.dat або dat_X00_1.dat
-    std::ifstream file;
-    if (x >= 1)
-        file.open("dat_X_1_1.dat");
-    else if (x <= -1)
-        file.open("dat_X00_1.dat");
-    else
-        file.open("dat_X1_00.dat");
-    double inputX, t, u;
-    while (file >> inputX >> t >> u) {
-        if (inputX == x)
-            return u;
+double computeU(const std::vector<std::vector<double>>& table, double x) {
+    for (const auto& row : table) {
+        if (row[0] == x) {
+            return row[2];
+        }
     }
-    throw std::runtime_error("Не вдалося знайти значення U(x) у файлі.");
+    throw std::runtime_error("Немає значення U для введеного x");
 }
-// Функція для обчислення функції fun(x, y, z) за алгоритмами 1, 2 або 3
-double computeFun(double x, double y, double z) {
-    double fun;
-    if (x < 0) {
-        fun = 330.0 * (x * y * y * z * z) + (22 * z * x * x * y * y * z * z * y * x * z * y * x * x * y * x * y * z * x * y * z * x * z * y * x * z * y * x * z * x * x * z * y * z * y * x * x * z * z * y * x * x * y * y * y * z * x * y * x * y * z * z);
-    } else if (x >= 0.1 && x <= 1.4) {
-        fun = (5 * (y / 5) * (y / 5) * (y / 5)) + (0.9 * (830 * (y * z * z * computeT(x) * computeT(x) * computeT(x)) + (5 * (y / 5) * (y / 5) * (y / 5)) * (83891 * (y * z * z * z * z))));
+// Алгоритм 1
+double algorithm1(double x, double y, double z) {
+    return (y * z * x * y * z) + (y * x * z - (x * y * z * 83891.));
+}
+// Алгоритм 2
+double algorithm2(double x, double y, double z) {
+    return (y * z * x * y * z) + (y * x * z - (x * y * z * 83891.));
+}
+// Алгоритм 3
+double algorithm3(double x, double y, double z, const std::vector<std::vector<double>>& table) {
+    double T, U;
+    if (x >= 1) {
+        T = computeT(table, x);
+        U = computeU(table, x);
+    } else if (x < 1 && x > 0) {
+        x = 1 / x;
+        T = computeT(table, x);
+        U = computeU(table, x);
     } else {
-        fun = ((x * z * computeU(y) * computeU(y) * computeT(x)) - (3482 * pow(y, 3) * z) - (23622 * pow(x, 3) * z) - (34981 * y * y * x * z));
+        x = 1 / x;
+        T = computeT(table, x);
+        U = computeU(table, x);
     }
-
-    return fun;
+    return (y * y * z * z * T * T * T * T) + (U * z * z);
 }
 int main() {
     double x, y, z;
     std::cout << "Введіть значення x, y та z: ";
     std::cin >> x >> y >> z;
     try {
-        double result = computeFun(x, y, z);
+        std::vector<std::vector<double>> table1 = readTableFromFile("dat_X_1_1.dat");
+        std::vector<std::vector<double>> table2 = readTableFromFile("dat_X1_00.dat");
+        std::vector<std::vector<double>> table3 = readTableFromFile("dat_X00_1.dat");
+        double result;
+        if (x < -1) {
+            result = algorithm3(x, y, z, table3);
+        } else if (x >= -1 && x <= 0) {
+            result = algorithm1(x, y, z);
+        } else if (x > 0 && x <= 1) {
+            result = algorithm2(x, y, z);
+        } else if (x > 1) {
+            result = algorithm3(x, y, z, table1);
+        } else {
+            throw std::runtime_error("Непідтримуване значення x");
+        }
         std::cout << "Результат обчислення fun(x, y, z): " << result << std::endl;
     } catch (const std::runtime_error& e) {
         std::cerr << "Помилка: " << e.what() << std::endl;
